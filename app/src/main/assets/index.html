@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#123b5d"><title>Fuel Monitor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f5f8;color:#172536;font:16px system-ui,-apple-system,sans-serif}
+header{background:#123b5d;color:white;padding:24px 18px 20px;border-radius:0 0 22px 22px}header h1{margin:0;font-size:25px}header p{margin:5px 0 0;opacity:.8}
+main{padding:15px;max-width:650px;margin:auto}.card{background:white;border-radius:16px;padding:17px;margin:12px 0;box-shadow:0 3px 14px #15334b0c}
+h2{font-size:18px;margin:0 0 14px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#eaf2f8;padding:14px;border-radius:12px}.stat small{display:block;color:#617286}.stat strong{font-size:24px;color:#123b5d}
+label{display:block;font-size:13px;color:#5d6c7b;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #d6dee6;border-radius:10px;font:inherit;background:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:0;border-radius:11px;padding:13px 15px;font-weight:650;font-size:15px;cursor:pointer}.primary{background:#123b5d;color:white;width:100%;margin-top:14px}.secondary{background:#e8eff5;color:#123b5d}.actions{display:flex;gap:8px;flex-wrap:wrap}.entry{border-bottom:1px solid #edf0f3;padding:12px 0}.entry:last-child{border:0}.entry b{font-size:16px}.muted{color:#718092;font-size:13px}.tag{float:right;background:#eaf2f8;color:#123b5d;padding:4px 8px;border-radius:20px;font-size:12px}
+footer{text-align:center;color:#8390a0;font-size:12px;padding:20px}
+</style></head><body>
+<header><h1>⛽ Fuel Monitor</h1><p>Vehicle mileage & fuel efficiency tracker</p></header>
+<main>
+<div class="card"><h2>Overall performance</h2><div class="stats">
+<div class="stat"><small>Average efficiency</small><strong id="avg">10.86</strong><small>km / liter</small></div>
+<div class="stat"><small>Total distance logged</small><strong id="distance">331</strong><small>kilometers</small></div>
+<div class="stat"><small>Total fuel recorded</small><strong id="liters">30.47</strong><small>liters</small></div>
+<div class="stat"><small>Records</small><strong id="count">1</strong><small>trips / refills</small></div></div></div>
+<div class="card"><h2>Add fuel / trip record</h2>
+<label>Date</label><input id="date" type="date">
+<div class="grid"><div><label>Initial odometer (km)</label><input id="start" type="number" step="0.1" value="95632"></div><div><label>Final odometer (km)</label><input id="end" type="number" step="0.1"></div></div>
+<div class="grid"><div><label>Fuel consumed (L)</label><input id="fuel" type="number" step="0.01"></div><div><label>Price per liter (₱)</label><input id="price" type="number" step="0.01" placeholder="Optional"></div></div>
+<label>Driving condition</label><select id="condition"><option>City and Long Driving</option><option>City Driving</option><option>Highway / Long Driving</option><option>Mixed Driving</option></select>
+<label>Notes (optional)</label><input id="notes" placeholder="Route, station, observations…">
+<div class="stat" style="margin-top:12px"><small>Calculated distance / efficiency</small><strong id="calc">—</strong></div>
+<button class="btn primary" onclick="save()">Save record</button></div>
+<div class="card"><h2>History</h2><div class="actions"><button class="btn secondary" onclick="exportCSV()">Export CSV</button><button class="btn secondary" onclick="backup()">Backup JSON</button><button class="btn secondary" onclick="restorePick.click()">Import JSON</button><input id="restorePick" type="file" accept=".json" hidden onchange="restore(event)"></div><div id="history"></div></div>
+<div class="card"><h2>Analysis</h2><div id="analysis" class="muted">Your saved records will appear here.</div></div>
+</main><footer>Fuel Monitor • Data is stored locally on this device</footer>
+<script>
+const $=id=>document.getElementById(id);let records=JSON.parse(localStorage.getItem('fuelRecords')||'[]');
+if(!records.length)records=[{date:'2026-10-07',start:95301,end:95632,distance:331,fuel:30.47,eff:331/30.47,condition:'City and Long Driving',price:0,notes:'Initial record'}];
+$('date').value=new Date().toISOString().slice(0,10);
+$('start').value=records.length?Math.max(...records.map(r=>r.end)):95632;
+function calc(){let d=+$('end').value-+$('start').value,f=+$('fuel').value;$('calc').textContent=d>0&&f>0?d.toFixed(1)+' km • '+(d/f).toFixed(2)+' km/L':'—'}
+['start','end','fuel'].forEach(x=>$(x).addEventListener('input',calc));
+function save(){let s=+$('start').value,e=+$('end').value,f=+$('fuel').value;if(! $('date').value||e<=s||f<=0)return alert('Please enter a valid date, odometer readings, and fuel amount.');
+records.push({date:$('date').value,start:s,end:e,distance:e-s,fuel:f,eff:(e-s)/f,condition:$('condition').value,price:+$('price').value||0,notes:$('notes').value});
+localStorage.setItem('fuelRecords',JSON.stringify(records));$('start').value=e;$('end').value='';$('fuel').value='';$('price').value='';$('notes').value='';render();alert('Record saved on this device.')}
+function render(){let d=records.reduce((a,r)=>a+r.distance,0),f=records.reduce((a,r)=>a+r.fuel,0);$('avg').textContent=f?(d/f).toFixed(2):'—';$('distance').textContent=d.toFixed(1);$('liters').textContent=f.toFixed(2);$('count').textContent=records.length;
+$('history').innerHTML=[...records].reverse().map((r,i)=>`<div class="entry"><span class="tag">${r.eff.toFixed(2)} km/L</span><b>${r.date}</b><div class="muted">${r.start.toLocaleString()} → ${r.end.toLocaleString()} km • ${r.distance.toFixed(1)} km • ${r.fuel} L</div><div class="muted">${r.condition}${r.price?' • ₱'+(r.fuel*r.price).toFixed(2):''}${r.notes?' • '+esc(r.notes):''}</div></div>`).join('');
+let best=Math.max(...records.map(r=>r.eff)),worst=Math.min(...records.map(r=>r.eff));$('analysis').innerHTML=`Overall average: <b>${f?(d/f).toFixed(2):0} km/L</b><br>Best record: ${best.toFixed(2)} km/L<br>Lowest record: ${worst.toFixed(2)} km/L<br>Total fuel cost: ₱${records.reduce((a,r)=>a+r.fuel*r.price,0).toFixed(2)}`;}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function exportCSV(){let rows=[['Date','Initial Odo','Final Odo','Distance km','Fuel L','Efficiency km/L','Condition','Price/L PHP','Fuel Cost PHP','Notes'],...records.map(r=>[r.date,r.start,r.end,r.distance,r.fuel,r.eff.toFixed(2),r.condition,r.price,(r.price*r.fuel).toFixed(2),r.notes])];let csv=rows.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');download('fuel-monitor.csv',csv,'text/csv')}
+function backup(){download('fuel-monitor-backup.json',JSON.stringify(records,null,2),'application/json')}
+function download(n,t,m){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click();URL.revokeObjectURL(a.href)}
+function restore(ev){let file=ev.target.files[0];if(!file)return;let rd=new FileReader();rd.onload=()=>{try{let x=JSON.parse(rd.result);if(!Array.isArray(x))throw 0;records=x;localStorage.setItem('fuelRecords',JSON.stringify(records));render();alert('Backup imported')}catch(e){alert('Invalid backup file')}};rd.readAsText(file)}
+render();calc();
+</script></body></html>

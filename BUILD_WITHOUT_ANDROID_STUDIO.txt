@@ -1,0 +1,11 @@
+BUILD APK WITHOUT ANDROID STUDIO (cloud build)
+You will need a free GitHub account and a browser:
+1. Sign in/create account at https://github.com
+2. Create a new repository (e.g. FuelMonitor), preferably Public for easiest setup.
+3. Upload all files/folders from this project ZIP into the repository (including .github/workflows/build-apk.yml).
+4. Open the Actions tab. If prompted, enable workflows.
+5. Select "Build Fuel Monitor APK" on the left, then "Run workflow".
+6. Wait for the workflow to finish (green check).
+7. Open the completed run and download the artifact named FuelMonitor-debug-apk.
+8. Extract app-debug.apk from the artifact ZIP, send it to your phone, and install it. Android may ask to allow installation from your file manager/browser.
+This is a debug APK for personal use, not a Play Store release.
